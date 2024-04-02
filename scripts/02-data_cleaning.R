@@ -63,5 +63,5 @@ pl <- clean_data |>
 pl
 
 #### Save data ####
-write.csv(clean_data, "outputs/data/clean_data.csv")
-write_parquet(clean_data, "outputs/data/clean_data.parquet")
+write.csv(clean_data, "outputs/data/analysis_data.csv")
+write_parquet(clean_data, "outputs/data/analysis_data.parquet")
