@@ -1,5 +1,5 @@
 #### Preamble ####
-# Purpose: Models... [...UPDATE THIS...]
+# Purpose: Models outbreak trends in toronto
 # Author: Rohan Alexander [...UPDATE THIS...]
 # Date: 11 February 2023 [...UPDATE THIS...]
 # Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
