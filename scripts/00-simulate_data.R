@@ -14,6 +14,14 @@ library(tidyverse)
 
 #### Simulate data ####
 # [...ADD CODE HERE...]
+outbreak_simulation <-
+  tibble(
+    setting = rep(x = c("Hospital", "Care Facility", "Clinic", "School", "Other"), times = 10),
+    year = rep(x = 2020:2024, times = 10),
+    deaths = rnbinom(n = 50, size = 20, prob = 0.1)
+  )
+
+outbreak_simulation
 
 
 
