@@ -5,7 +5,7 @@ author: Sindhu Priya Mallavarapu
 thanks: "Code and data are available at: https://github.com/MSindhuPriya/toronto_outbreaks."
 date: today
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
+abstract: "This paper analyzes the disease outbreak patterns across the city of Toronto in the years between 2020 - 2024 based on location and models future outbreak trends. It is found that the highest number of disease outbreaks within these five years happened Long-Term Care Facilities. The results of this paper can help government officials see where more healthcare funding and stricter safety practices are needed."
 format: pdf
 number-sections: true
 bibliography: references.bib
@@ -23,13 +23,17 @@ library(palmerpenguins)
 
 # Introduction
 
-You can and should cross-reference sections and sub-sections. 
+The pandemic has put a clear spotlight on all the cracks in the medical system. As Toronto is the most populous city in Canada, there is particular drain on this city's medical system. Thus, identifying where there are higher outbreaks can show where the funding needs to be directed to in order to improve the medical system. This paper uses disease outbreak data form Open Data Toronto [@tor] to show where the highest number of outbreaks took place in Toronto and model the future outbreak trends for that setting. The estimand in this paper is the total disease outbreaks in each setting. 
 
-The remainder of this paper is structured as follows. @sec-data....
+It is found that no matter what year between 2020 to 2024 were examine, the most outbreaks occurred in Long-Term Care Facilities and the least amount of outbreaks happened in Transitional Care. Moreover, between the examined years, 2022 was year with the highest amount of total disease outbreaks. These findings are important as they can help government officials see where there is a need for more funding and health care professionals.
 
+The paper is structured in the following way. The Data section, [@sec-data], goes into detail about the data that was used in this paper, including details about its measurement. The Model section, [@sec-model], talks about the model the model used in the paper. The Results section, [@sec-res], shows what was found from analyzing the data. Further discussion of the results, limitations, and future research pathways are detailed in the Discussion section, [@sec-disc]. The Conclusion and Appendix provide a brief summary, as well as, additional details that were not included in the main body of the paper.
 
 
 # Data {#sec-data}
+
+
+We use R [@citeR] and it's packages [list packages here] to analyze the data.
 
 Some of our data is of penguins (@fig-bills), from @palmerpenguins.
 
@@ -74,7 +78,7 @@ Talk way more about it.
 
 
 
-# Model
+# Model {#sec-model}
 
 The goal of our modelling strategy is twofold. Firstly,...
 
@@ -103,7 +107,7 @@ We expect a positive relationship between the size of the wings and time spent a
 We can use maths by including latex between dollar signs, for instance $\theta$.
 
 
-# Results
+# Results {#sec-res}
 
 Our results are summarized in @tbl-modelresults.
 
@@ -142,7 +146,7 @@ modelsummary::modelsummary(
 
 
 
-# Discussion
+# Discussion {#sec-disc}
 
 ## First discussion point {#sec-first-point}
 
