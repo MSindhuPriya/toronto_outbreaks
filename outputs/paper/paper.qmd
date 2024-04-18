@@ -18,83 +18,100 @@ bibliography: references.bib
 
 library(tidyverse)
 library(palmerpenguins)
+library(marginaleffects)
+library(arrow)
+library(rstanarm)
+library(ggplot2)
+library(knitr)
+library(dplyr)
 ```
 
 
 # Introduction
 
-The pandemic has put a clear spotlight on all the cracks in the medical system. As Toronto is the most populous city in Canada, there is particular drain on this city's medical system. Thus, identifying where there are higher outbreaks can show where the funding needs to be directed to in order to improve the medical system. This paper uses disease outbreak data form Open Data Toronto [@tor] to show where the highest number of outbreaks took place in Toronto and model the future outbreak trends for that setting. The estimand in this paper is the total disease outbreaks in each setting. 
+The pandemic has put a clear spotlight on all the cracks in the medical system. As Toronto is the most populous city in Canada, there is particular drain on this city's medical system. Thus, identifying where there are a higher number of outbreaks can show where the funding needs to be directed to in order to improve the medical system. This paper uses disease outbreak data form Open Data Toronto [@tor] to show where the highest number of outbreaks took place in Toronto and model outbreak trends given the type of healthcare facility (setting) and year. The estimand in this paper is the average disease outbreaks in each setting and year. 
 
-It is found that no matter what year between 2020 to 2024 were examine, the most outbreaks occurred in Long-Term Care Facilities and the least amount of outbreaks happened in Transitional Care. Moreover, between the examined years, 2022 was year with the highest amount of total disease outbreaks. These findings are important as they can help government officials see where there is a need for more funding and health care professionals.
+It is found that no matter what year between 2020 to 2024 was examined, the most outbreaks occurred in Long-Term Care Facilities (LTCF) and the least amount of outbreaks happened in Transitional Care. Moreover, between the examined years, 2022 was the year with the highest amount of total disease outbreaks. These findings are important as they can help government officials see where there is a need for more funding and health care professionals.
 
-The paper is structured in the following way. The Data section, [@sec-data], goes into detail about the data that was used in this paper, including details about its measurement. The Model section, [@sec-model], talks about the model the model used in the paper. The Results section, [@sec-res], shows what was found from analyzing the data. Further discussion of the results, limitations, and future research pathways are detailed in the Discussion section, [@sec-disc]. The Conclusion and Appendix provide a brief summary, as well as, additional details that were not included in the main body of the paper.
+The paper is structured in the following way. The Data section, [@sec-data], goes into detail about the data that was used in this paper, including details about its measurement. The Model section, [@sec-model], talks about the Poisson distribution model used in the paper. The Results section, [@sec-res], shows what was found from analyzing the data, that is, the highest number of outbreaks occurred in Long-Term Care Facilities and in the year 2022. Further discussion of the results, limitations, and future research pathways are detailed in the Discussion section, [@sec-disc]. The Appendix provides additional details about the model that were not included in the main body of the paper.
 
 
 # Data {#sec-data}
 
 
-We use R [@citeR] and it's packages [list packages here] to analyze the data.
+## Overview
 
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
+The disease outbreak data that was used in this paper is sourced from Open Data Toronto [@tor] and maintained by the Communicable Disease Surveillance Unit. The analysis in this paper is done through R [@citeR] along with other packages that are compatible with R, such as, `tidyverse` [@tidy], `marginaleffects` [@margeff], `arrow` [@arrow], `rstanarm` [@rstanarm],`ggplot2` [@gg2], `knitr` [@knit], `lintr` [@citelint], and `dplyr` [@dp]. 
+
+Other than the data that was used here, similar datasets were available though the province of Ontario. However, this paper is only concerned with outbreak patterns in the city of Toronto and the datasets available through the province of Ontario did not have any data solely specific to this city. Therefore, we chose to only use the disease outbreak dataset available through Open Data Toronto so that we had data that was relevant to the region of study. 
 
 ```{r}
 #| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
-#| eval: false
-
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
+#| fig-cap: Frequncy of outbreaks grouped by setting and year
 #| echo: false
 #| warning: false
 #| message: false
-#| eval: false
+#| eval: true
 
-analysis_data <- read_csv(here::here("outputs/data/analysis_data.csv"))
 
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
+analysis_data <- read_parquet(here::here("outputs/data/analysis_data.parquet"))
+
+sel <- select(analysis_data, c(outbreak_setting, setting_count, outbreak_year))
+
+kable(unique(sel), col.names = c("Outbreak Setting", "# of Outbreaks", "Outbreak Year"),
+    align = c("l", "r", "r", "r", "r"),
+    digits = 0, booktabs = TRUE, linesep = "")
 ```
 
-Talk way more about it. 
+## Measurement
+
+Several decisions were made with regards to the measurement of outbreaks in the city of Toronto. First, only outbreaks reported in healthcare facilities were measured. This was done to ensure reliability of data as outbreaks reported by individuals in their residential areas are not reliable. Moreover, only data between the years 2020 and 2024 (inclusive) were considered. During data cleaning we added in variables that counted the number of outbreaks to happen in that setting based on the year. As some outbreaks spanned over multiple years, the year of the outbreak was determined by the year the outbreak began rather than the year it ended.
+
+
+## Description of Variables
+
+A brief look at the relevant variables in the dataset is seen in @fig-bills. In this paper, we focus on three main variables - `outbreak_setting`, `setting_count`, and `outbreak_year`. The type of healthcare facility that the outbreak happened in is represented as a string in `outbreak_setting`. The year that the outbreak began in (a year between 2020 to 2024, inclusive) is represented as an integer in `outbreak_year`. The number of outbreaks at that setting in that particular year is given in `setting_count`. @fig-bills shows the 27 occurrences of `setting_count`, that is, the 27 different counts of how man outbreaks happened in each setting in each of the observed years. 
+
+```{r}
+#| label: fig-planes
+#| fig-cap: Outbreaks per year grouped by setting
+#| echo: false
+#| warning: false
+#| message: false
+#| eval: true
+
+pl <- analysis_data |>
+  ggplot(aes(x = outbreak_year, y = setting_count, color = outbreak_setting)) +
+  geom_point() + geom_line() +
+  theme_grey() + 
+  labs(x = "Year", y = "Annual outbreaks in Toronto") +
+  facet_wrap(vars(outbreak_setting), dir = "v", ncol = 1) +
+  theme(legend.position = "none")
+pl
+```
+
 
 
 
 # Model {#sec-model}
 
-The goal of our modelling strategy is twofold. Firstly,...
+The goal of our modelling strategy is to use Poisson distribution to model the number of disease outbreaks in Toronto based on type of healthcare facility and the outbreak year. We use Poisson distribution as this is commonly used when given the average rate of occurrence of the event to model the number of those events occurring in a fixed interval of time or space.
 
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
+In this study, we treat each setting and year as a separate interval of time and space. The number of occurrences in each of those intervals follows a Poisson distribution. This distribution is characterized by a single parameter, \lambda, which in this case represents the average number of outbreaks in each setting and year interval. 
+
+## Assumptions
+Poisson distributions assume that events occur independently and at a constant average rate. That is, in our study, this assumption implies that occurrence of an outbreak of a particular disease in one year or setting does not imply that an outbreak of a different disease in another setting or year will occur. 
 
 ## Model set-up
 
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
+Define $y_i$ as the number of disease outbreaks given a setting or year. To implement our Poisson model, we first calculated \lambda which is the average disease outbreaks given a year and a type of healthcare facility. Then we used that \lambda as our parameter in our Poisson distribution to model the number of outbreaks in Toronto given the year and setting. 
 
 \begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
+y_i|\lambda &\sim \mbox{Poisson}(\lambda_i)\\
+log(\lambda_i) &= \beta_0 + \beta_1 \times \mbox{Outbreak} \mbox{ Setting}_i + \beta_2 \times \mbox{ Outbreak} \mbox{ Year}_i \\
+\beta_0 &\sim \mbox{Normal}(0, 2.5) \\
+\beta_1 &\sim \mbox{Normal}(0, 2.5) \\
+\beta_2 &\sim \mbox{Normal}(0, 2.5)
 \end{align}
 
 We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
@@ -102,14 +119,16 @@ We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use
 
 ### Model justification
 
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
+We expect an upside down parabola as the relationship between the outbreaks given the setting and year. This is because we expect an increase in outbreaks due to the COVID-19 pandemic and then a decrease afterwards. We find that our model accurately predicted the number of disease outbreaks based on setting and year. Therefore, we can say that the Poisson distribution accurately captures the frequency of outbreaks in Toronto if given the healthcare facility and year. This aids us in being able to see which facilities need additional funding and healthcare workers. 
 
 
 # Results {#sec-res}
 
-Our results are summarized in @tbl-modelresults.
+As seen in @fig-planes we found that the highest number of occurred in Long-Term Care Facilities in the year 2022. Overall, the year 2022 had the highest number of outbreaks and Long-Term Care Facilities were the healthcare facilities with the highest number of outbreaks. Moreover, it is found that Transitional Care facilities had the least amount of outbreaks. 
+
+## Poisson Distribution Analysis
+
+We found that our Poisson distribution can closely model the number of outbreaks given year and type of healthcare facility. This model acts according to our expectation that that there is a bell shaped distribution between frequency of outbreaks given setting and year. Our results are summarized in @tbl-modelresults where we found that the intercept for our model is 4.73. Further, the accuracy checks for our models are given in @sec-check and additional diagnostic details are in @sec-diag.
 
 ```{r}
 #| echo: false
@@ -122,15 +141,13 @@ library(rstanarm)
 first_model <-
   readRDS(file = here::here("outputs/models/first_model.rds"))
 
-second_model <- 
-  readRDS(file = here::here("outputs/models/second_model.rds"))
 ```
 
 ```{r}
 #| echo: false
 #| eval: true
 #| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
+#| tbl-cap: "Explanatory model of the total disease outbreaks based on setting and year"
 #| warning: false
 
 modelsummary::modelsummary(
@@ -145,40 +162,33 @@ modelsummary::modelsummary(
 
 
 
-
 # Discussion {#sec-disc}
 
-## First discussion point {#sec-first-point}
+In this paper, we found the number of outbreaks that occurred in a given setting and year. Our goal was to investigate the relationship between the frequency of the outbreaks and the year and type of healthcare facility that the outbreaks occurred in. This can provide us with valuable insights on where to increase medical funding and where there is an additional need for healthcare workers. This can be a step towards having a more stable medical system. 
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+Our analysis revealed that the highest number of outbreaks occurred during the year 2022 and Long-Term Care Facilities (LTCF). We also found that overall Long-Term Care Facilities consistently had the highest outbreak rates regardless of year. Additionally, we found that the year 2022 was the year with the highest number of outbreaks regardless of setting which can be explained by the COVID-19 pandemic. Further, we were also able to model the number of outbreaks given the year and the type of healthcare facility using a Poisson distribution model. 
 
-## Second discussion point
+## Weaknesses
 
-## Third discussion point
+Our study only focused on the city of Toronto and did not look at the outbreak trends of Canada as a whole. Further, we also only looked at outbreaks that were reported in health care facilities. We did not map the location of those facilities, nor did we look at outbreaks in residential areas. Moreover, our study did not look at any outbreak trends before the year 2020. 
 
-## Weaknesses and next steps
+## Future Research
 
-Weaknesses and next steps should also be included.
+Future research can include looking at outbreaks across Canada and not just Toronto. Along with that, we can include outbreak data from additional settings, not just healthcare facilities. Additionally, future studies can look at outbreak data from before 2020 and compare them to current data. Our study lays out a foundation of where we can direct funding to help aid the medical system, however, further research can be more specific as to what exactly can be done to ensure that the aid is effective. 
+
 
 \newpage
 
 \appendix
 
-# Appendix {-}
+# Appendix {-} 
 
+## Posterior predictive check {#sec-check}
 
-# Additional data details
-
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
+In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows our model's ability to accurately predict the frequency of outbreaks given the setting and year. From @fig-ppcheckandposteriorvsprior-1 we see that our model is close to the actual data. This means that our Poisson distribution model has the ability to accurately predict the number of outbreaks given the type of healthcare facility and the year. 
 
 ```{r}
-#| eval: false
+#| eval: true
 #| echo: false
 #| message: false
 #| warning: false
@@ -198,15 +208,15 @@ posterior_vs_prior(first_model) +
   coord_flip()
 ```
 
-## Diagnostics
+## Diagnostics {#sec-diag}
 
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
+@fig-stanareyouokay-1 is a trace plot. Here, each line shows the sampled values of a parameter at each iteration of the MCMC algorithm which shows the convergence of the chain. 
 
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
+@fig-stanareyouokay-2 is a Rhat plot. This compares the variance within chains to the variance between chains. Our Rhat plot shows that they fall by 1 which indicates convergence. 
 
 ```{r}
 #| echo: false
-#| eval: false
+#| eval: true
 #| message: false
 #| warning: false
 #| label: fig-stanareyouokay
@@ -218,9 +228,6 @@ plot(first_model, "trace")
 
 plot(first_model, "rhat")
 
-plot(second_model, "trace")
-
-plot(second_model, "rhat")
 ```
 
 

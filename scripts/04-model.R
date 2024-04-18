@@ -19,7 +19,7 @@ analysis_data <- read_parquet("outputs/data/analysis_data.parquet")
 # Build a poisson model
 first_model <-
   stan_glm(
-    formula = setting_count ~ outbreak_setting,
+    formula = setting_count ~ outbreak_setting + outbreak_year,
     data = analysis_data,
     family = poisson(link = "log"),
     prior = normal(location = 0, scale = 2.5, autoscale = TRUE),
